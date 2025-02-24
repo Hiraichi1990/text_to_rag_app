@@ -49,19 +49,20 @@ CHUNK_OVERLAP = 64
 PERSIST_PATH = "./.chroma_db"
 COLLECTION_NAME = "langchain"
 
+# テキスト分割設定
 text_splitter = CharacterTextSplitter(
         separator = "\n",
         chunk_size = CHUNK_SIZE,
         chunk_overlap  = CHUNK_OVERLAP,
     )
 
-# テキストデータを分割
+# ドキュメントデータを分割
 docs = text_splitter.split_documents(docs)
 
 # 分割したデータをベクトル化
 vectorstore = Chroma.from_documents(
     collection_name=COLLECTION_NAME,
-    documents=docs,                             
+    documents=docs,
     embedding=OpenAIEmbeddings(),
     persist_directory=PERSIST_PATH
 )
@@ -84,12 +85,16 @@ if "history" not in st.session_state:
     st.session_state["history"] = ChatMessageHistory()
 history = st.session_state["history"]
 
-# sessionから履歴を取得
 def get_session_history(session_id: str):
+    '''
+    #sessionから履歴を取得
+    '''
     return history
 
-# RAGを実行し、回答を生成
 def create_chain():
+    '''
+    RAGを実行し、過去の文脈を考慮した回答を生成
+    '''
 
     # 履歴のシステムプロンプト
     contextualize_q_system_prompt = """Given a chat history and the latest user question \
@@ -130,10 +135,10 @@ def create_chain():
         ]
     )
 
-    # 回答チェーン
+    # 質問回答チェーン
     question_answer_chain = create_stuff_documents_chain(llm, qa_prompt)
 
-    # 履歴レトリーバーと回答チェーンを順番に適用するチェーンを作成
+    # 履歴レトリーバーと質問回答チェーンを順番に適用するチェーンを作成
     rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
 
     conversational_rag_chain = RunnableWithMessageHistory(
@@ -152,6 +157,7 @@ if "chain" not in st.session_state:
 
 chain = st.session_state["chain"]
 
+# 履歴を表示
 for h in history:
     for message in h[1]:
         if isinstance(message, AIMessage):
@@ -161,6 +167,7 @@ for h in history:
             with st.chat_message("Human"):
                 st.write(message.content)
 
+# ユーザーの入力に対しAIが回答する
 if prompt := st.chat_input("質問を入力"):
     with st.chat_message("user"):
         st.markdown(prompt)

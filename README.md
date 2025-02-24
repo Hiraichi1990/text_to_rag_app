@@ -1,1 +1,1 @@
-# rag_app
+# text_to_rag_app
